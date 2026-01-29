@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
+import { useEffect } from "react";
+import { supabase } from "./supabaseClient";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -18,15 +20,51 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import { useAuthStore } from "./store/authStore";
+import PreLoader from "./components/common/PreLoader";
 
 export default function App() {
+  const { session, setSession, loading, setLoading } = useAuthStore();
+
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Listen for changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setSession, setLoading]);
+
+  if (loading) {
+    return <PreLoader />;
+  }
+
   return (
     <>
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
+          {/* Public Routes - Redirect to home if logged in */}
+          <Route
+            path="/signin"
+            element={!session ? <SignIn /> : <Navigate to="/" replace />}
+          />
+          <Route
+            path="/signup"
+            element={!session ? <SignUp /> : <Navigate to="/" replace />}
+          />
+
+          {/* Protected Routes - Redirect to signin if not logged in */}
+          <Route element={session ? <AppLayout /> : <Navigate to="/signin" replace />}>
             <Route index path="/" element={<Home />} />
 
             {/* Others Page */}
@@ -52,10 +90,6 @@ export default function App() {
             <Route path="/line-chart" element={<LineChart />} />
             <Route path="/bar-chart" element={<BarChart />} />
           </Route>
-
-          {/* Auth Layout */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
