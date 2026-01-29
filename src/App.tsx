@@ -24,12 +24,15 @@ import { useAuthStore } from "./store/authStore";
 import PreLoader from "./components/common/PreLoader";
 
 export default function App() {
-  const { session, setSession, loading, setLoading } = useAuthStore();
+  const { session, setSession, loading, setLoading, setRole, fetchUserRole } = useAuthStore();
 
   useEffect(() => {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) {
+        fetchUserRole(session.user.id);
+      }
       setLoading(false);
     });
 
@@ -38,11 +41,16 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) {
+        fetchUserRole(session.user.id);
+      } else {
+        setRole(null);
+      }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [setSession, setLoading]);
+  }, [setSession, setLoading, setRole, fetchUserRole]);
 
   if (loading) {
     return <PreLoader />;

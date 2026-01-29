@@ -19,7 +19,7 @@ export default function SignInForm() {
 
   const [authError, setAuthError] = useState('');
 
-  const setSession = useAuthStore((state) => state.setSession);
+  const { setSession, fetchUserRole } = useAuthStore();
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -35,6 +35,11 @@ export default function SignInForm() {
         return;
       }
       setSession(data.session);
+
+      if (data.session) {
+        await fetchUserRole(data.session.user.id);
+      }
+
       setAuthError("");
     } catch (error) {
       setAuthError("Ocurrió un error al iniciar sesión, por favor intente nuevamente")
