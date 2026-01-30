@@ -19,7 +19,7 @@ export default function SignInForm() {
 
   const [authError, setAuthError] = useState('');
 
-  const { setSession, fetchUserRole } = useAuthStore();
+  const { setSession, fetchUserProfile } = useAuthStore();
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -37,7 +37,7 @@ export default function SignInForm() {
       setSession(data.session);
 
       if (data.session) {
-        await fetchUserRole(data.session.user.id);
+        await fetchUserProfile(data.session.user.id);
       }
 
       setAuthError("");
